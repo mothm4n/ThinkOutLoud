@@ -1,15 +1,15 @@
-# Audio Recorder App
+# ThinkOutLoud
 
-Una aplicación web simple para grabar audio con una interfaz intuitiva, desarrollada con Next.js y Tailwind CSS.
+Una aplicación web para pensar en voz alta y grabar tus pensamientos, desarrollada con Next.js y Tailwind CSS.
 
 ## Características
 
 - 🎙️ Grabación de audio en tiempo real
-- 📊 Visualización de la onda de audio durante la grabación
+- 💭 Interfaz minimalista para concentrarte en tus pensamientos
 - 💾 Guardado automático en formato WebM
 - 🎵 Previsualización de audio antes de guardar
 - 🎨 Interfaz moderna y responsive
-- 🔊 Alta calidad de audio con reducción de ruido
+- 🔊 Alta calidad de audio
 
 ## Requisitos Previos
 
@@ -21,8 +21,8 @@ Una aplicación web simple para grabar audio con una interfaz intuitiva, desarro
 1. Clona el repositorio:
 
 ```bash
-git clone https://github.com/mothm4n/audio-recorder.git
-cd audio-recorder
+git clone https://github.com/mothm4n/ThinkOutLoud.git
+cd ThinkOutLoud
 ```
 
 2. Instala las dependencias:
@@ -45,15 +45,15 @@ yarn dev
 
 ## Uso
 
-1. Selecciona una carpeta de destino para guardar las grabaciones
-2. Haz clic en el botón del micrófono para comenzar a grabar
+1. Haz clic en el botón del micrófono para comenzar a grabar
+2. Habla y expresa tus pensamientos
 3. Haz clic nuevamente para detener la grabación
 4. Previsualiza la grabación antes de guardarla
-5. La grabación se guardará automáticamente en la carpeta seleccionada
+5. La grabación se guardará automáticamente
 
 ## Tecnologías Utilizadas
 
-- [Next.js](https://nextjs.org/)
+- [Next.js 14](https://nextjs.org/)
 - [React](https://reactjs.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
