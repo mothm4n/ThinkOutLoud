@@ -17,7 +17,8 @@ export default function Home() {
   const audioMotionRef = useRef<AudioMotionAnalyzer | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const [selectedPath, setSelectedPath] = useState<string>('');
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [selectedDirHandle, setSelectedDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
 
   useEffect(() => {
     return () => {
@@ -114,6 +115,7 @@ export default function Home() {
       // @ts-expect-error - showDirectoryPicker is experimental
       const dirHandle = await window.showDirectoryPicker();
       setSelectedPath(dirHandle.name);
+      setSelectedDirHandle(dirHandle);
       setError(null);
     } catch (err) {
       if (err instanceof Error) {
@@ -182,16 +184,25 @@ export default function Home() {
             setAudioURL(url);
 
             try {
-              // @ts-expect-error - showDirectoryPicker is experimental
-              const dirHandle = await window.showDirectoryPicker({
-                startIn: selectedPath,
-              });
-              const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
-              const writable = await fileHandle.createWritable();
-              await writable.write(audioBlob);
-              await writable.close();
-              setSuccessMessage('¡Grabación guardada exitosamente!');
+              if (selectedDirHandle) {
+                // Si hay una carpeta seleccionada, guardamos ahí
+                const fileHandle = await selectedDirHandle.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(audioBlob);
+                await writable.close();
+                setSuccessMessage('¡Grabación guardada exitosamente en la carpeta seleccionada!');
+              } else {
+                // Si no hay carpeta seleccionada, mostramos el selector
+                // @ts-expect-error - showDirectoryPicker is experimental
+                const dirHandle = await window.showDirectoryPicker();
+                const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(audioBlob);
+                await writable.close();
+                setSuccessMessage('¡Grabación guardada exitosamente!');
+              }
             } catch {
+              // Si falla el guardado en carpeta, descargamos como antes
               const a = document.createElement('a');
               a.href = url;
               a.download = fileName;
