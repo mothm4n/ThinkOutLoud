@@ -1,8 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { FaMicrophone, FaStop, FaFolder, FaPlay, FaPause } from 'react-icons/fa';
+import { Mic, Square, Folder, Play, Pause } from 'lucide-react';
 import AudioMotionAnalyzer from 'audiomotion-analyzer';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
@@ -117,9 +121,15 @@ export default function Home() {
       setSelectedPath(dirHandle.name);
       setSelectedDirHandle(dirHandle);
       setError(null);
+      toast.success("Carpeta seleccionada", {
+        description: `Se ha seleccionado la carpeta: ${dirHandle.name}`,
+      });
     } catch (err) {
       if (err instanceof Error) {
         setError('Error al seleccionar la carpeta: ' + err.message);
+        toast.error("Error", {
+          description: 'Error al seleccionar la carpeta: ' + err.message,
+        });
       }
     }
   };
@@ -140,6 +150,9 @@ export default function Home() {
       if (!isRecording) {
         if (!selectedPath) {
           setError('Por favor, selecciona una carpeta de destino primero');
+          toast.error("Error", {
+            description: 'Por favor, selecciona una carpeta de destino primero',
+          });
           return;
         }
         setError(null);
@@ -156,7 +169,6 @@ export default function Home() {
 
         visualize(stream);
         
-        // Intentamos usar el formato más compatible
         const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
           ? 'audio/webm;codecs=opus'
           : 'audio/webm';
@@ -179,45 +191,52 @@ export default function Home() {
             const audioBlob = new Blob(chunksRef.current, { type: mimeType });
             const fileName = `recording-${new Date().toISOString().replace(/[:.]/g, '-')}.webm`;
             
-            // Crear URL para previsualización
             const url = URL.createObjectURL(audioBlob);
             setAudioURL(url);
 
             try {
               if (selectedDirHandle) {
-                // Si hay una carpeta seleccionada, guardamos ahí
                 const fileHandle = await selectedDirHandle.getFileHandle(fileName, { create: true });
                 const writable = await fileHandle.createWritable();
                 await writable.write(audioBlob);
                 await writable.close();
-                setSuccessMessage('¡Grabación guardada exitosamente en la carpeta seleccionada!');
+                toast.success("¡Éxito!", {
+                  description: '¡Grabación guardada exitosamente en la carpeta seleccionada!',
+                });
               } else {
-                // Si no hay carpeta seleccionada, mostramos el selector
                 // @ts-expect-error - showDirectoryPicker is experimental
                 const dirHandle = await window.showDirectoryPicker();
                 const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
                 const writable = await fileHandle.createWritable();
                 await writable.write(audioBlob);
                 await writable.close();
-                setSuccessMessage('¡Grabación guardada exitosamente!');
+                toast.success("¡Éxito!", {
+                  description: '¡Grabación guardada exitosamente!',
+                });
               }
             } catch {
-              // Si falla el guardado en carpeta, descargamos como antes
               const a = document.createElement('a');
               a.href = url;
               a.download = fileName;
               a.click();
-              setSuccessMessage('Grabación descargada exitosamente');
+              toast.success("¡Éxito!", {
+                description: 'Grabación descargada exitosamente',
+              });
             }
           } catch (err) {
             setError('Error al guardar la grabación');
+            toast.error("Error", {
+              description: 'Error al guardar la grabación',
+            });
             console.error('Error saving recording:', err);
           }
         };
 
-        // Configuramos para que genere chunks cada 250ms para mejor calidad
         mediaRecorderRef.current.start(250);
         setIsRecording(true);
+        toast.info("Grabación iniciada", {
+          description: "La grabación ha comenzado...",
+        });
       } else {
         if (mediaRecorderRef.current) {
           mediaRecorderRef.current.stop();
@@ -230,9 +249,15 @@ export default function Home() {
           await audioContextRef.current?.close();
         }
         setIsRecording(false);
+        toast.info("Grabación detenida", {
+          description: "La grabación ha finalizado",
+        });
       }
     } catch (err) {
       setError('Por favor permite el acceso al micrófono para grabar audio');
+      toast.error("Error", {
+        description: 'Por favor permite el acceso al micrófono para grabar audio',
+      });
       console.error('Error accessing microphone:', err);
     }
   };
@@ -249,82 +274,86 @@ export default function Home() {
   }, [isRecording, audioURL]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-white p-8">
-      <div className="text-center w-full">
-        <div className="flex flex-col items-center space-y-4 mb-8">
-          <button
-            onClick={handleFolderSelect}
-            className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-md"
-          >
-            <FaFolder className="w-5 h-5" />
-            Seleccionar carpeta de destino
-          </button>
-          {selectedPath && (
-            <p className="text-sm text-gray-600 mt-2">
-              Carpeta seleccionada: {selectedPath}
-            </p>
-          )}
-        </div>
-
-        <div 
-          ref={containerRef} 
-          className="w-full h-64 bg-white shadow-xl overflow-hidden mb-8"
-          style={{ 
-            backgroundColor: 'white'
-          }}
-        />
-
-        <div className="flex flex-col items-center space-y-8 max-w-2xl mx-auto">
-          <div className="space-y-6">
-            <button
-              onClick={handleRecording}
-              className={`p-8 rounded-full transition-all duration-300 shadow-lg ${
-                isRecording 
-                  ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-                  : 'bg-blue-500 hover:bg-blue-600'
-              }`}
-              aria-label={isRecording ? 'Detener grabación' : 'Iniciar grabación'}
+    <main className="container mx-auto px-4 py-8">
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle className="text-center">Grabadora de Audio</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center space-y-6">
+            <Button
+              onClick={handleFolderSelect}
+              variant="outline"
+              size="lg"
+              className="w-full max-w-md"
             >
-              {isRecording ? (
-                <FaStop className="w-8 h-8 text-white" />
-              ) : (
-                <FaMicrophone className="w-8 h-8 text-white" />
-              )}
-            </button>
-            
-            <p className="text-xl font-medium text-gray-800">
-              {isRecording ? 'Grabación en curso...' : 'Haz clic para comenzar a grabar'}
-            </p>
-          </div>
+              <Folder className="mr-2 h-5 w-5" />
+              Seleccionar carpeta de destino
+            </Button>
 
-          {audioURL && !isRecording && (
-            <div className="space-y-4 w-full">
-              <button
-                onClick={handlePlayPause}
-                className="flex items-center gap-2 px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors shadow-md mx-auto"
+            {selectedPath && (
+              <p className="text-sm text-muted-foreground">
+                Carpeta seleccionada: {selectedPath}
+              </p>
+            )}
+
+            <div 
+              ref={containerRef} 
+              className="w-full h-64 rounded-lg border bg-card"
+            />
+
+            <div className="flex flex-col items-center space-y-4 w-full">
+              <Button
+                onClick={handleRecording}
+                size="lg"
+                variant={isRecording ? "destructive" : "default"}
+                className={`rounded-full p-8 ${isRecording ? 'animate-pulse' : ''}`}
               >
-                {isPlaying ? <FaPause className="w-5 h-5" /> : <FaPlay className="w-5 h-5" />}
-                {isPlaying ? 'Pausar' : 'Reproducir'} grabación
-              </button>
-              <audio
-                ref={audioRef}
-                src={audioURL}
-                onEnded={() => setIsPlaying(false)}
-                className="w-full mt-4"
-                controls
-              />
+                {isRecording ? (
+                  <Square className="h-8 w-8" />
+                ) : (
+                  <Mic className="h-8 w-8" />
+                )}
+              </Button>
+
+              <p className="text-xl font-medium text-card-foreground">
+                {isRecording ? 'Grabación en curso...' : 'Haz clic para comenzar a grabar'}
+              </p>
+
+              {audioURL && !isRecording && (
+                <div className="space-y-4 w-full">
+                  <Button
+                    onClick={handlePlayPause}
+                    variant="secondary"
+                    size="lg"
+                    className="w-full max-w-md mx-auto"
+                  >
+                    {isPlaying ? (
+                      <Pause className="mr-2 h-5 w-5" />
+                    ) : (
+                      <Play className="mr-2 h-5 w-5" />
+                    )}
+                    {isPlaying ? 'Pausar' : 'Reproducir'} grabación
+                  </Button>
+                  <audio
+                    ref={audioRef}
+                    src={audioURL}
+                    onEnded={() => setIsPlaying(false)}
+                    className="w-full"
+                    controls
+                  />
+                </div>
+              )}
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
             </div>
-          )}
-          
-          {error && (
-            <p className="text-red-500 mt-4" role="alert">{error}</p>
-          )}
-          
-          {successMessage && (
-            <p className="text-green-500 font-medium mt-4" role="status">{successMessage}</p>
-          )}
-        </div>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </main>
   );
 }
