@@ -47,8 +47,14 @@ export default function Home() {
       audioMotionRef.current.destroy();
     }
 
+    const gainNode = audioContextRef.current.createGain();
+    gainNode.gain.value = 0;
+    analyserRef.current.connect(gainNode);
+    gainNode.connect(audioContextRef.current.destination);
+
     audioMotionRef.current = new AudioMotionAnalyzer(containerRef.current, {
       source: analyserRef.current,
+      connectSpeakers: false,
       alphaBars: false,
       ansiBands: false,
       barSpace: 0.1,
@@ -98,7 +104,7 @@ export default function Home() {
       splitGradient: true,
       trueLeds: true,
       useCanvas: true,
-      volume: 0.4,
+      volume: 0,
       weightingFilter: "D"
     });
   };
