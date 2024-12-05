@@ -41,16 +41,16 @@
     "audiomotion-analyzer": "^4.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cmdk": "^1.0.0",
+    "cmdk": "^1.0.4",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.5.1",
     "input-otp": "^1.4.1",
     "lucide-react": "^0.468.0",
-    "next": "15.0.3",
+    "next": "^15.0.3",
     "next-themes": "^0.4.3",
-    "react": "19.0.0-rc-66855b96-20241106",
-    "react-day-picker": "^8.10.1",
-    "react-dom": "19.0.0-rc-66855b96-20241106",
+    "react": "^18.3.1",
+    "react-day-picker": "^9.4.1",
+    "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.2",
     "react-icons": "^5.4.0",
     "react-resizable-panels": "^2.1.7",
@@ -62,13 +62,13 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^22.10.1",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "eslint": "^8",
+    "eslint": "^9",
     "eslint-config-next": "15.0.3",
     "postcss": "^8",
-    "tailwindcss": "^3.4.1",
+    "tailwindcss": "^3.4.16",
     "typescript": "^5"
   }
 }
