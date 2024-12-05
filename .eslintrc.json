@@ -1,9 +1,57 @@
 {
-  "extends": ["next/core-web-vitals"],
-  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended",
+    "plugin:import/recommended",
+    "plugin:import/typescript"
+  ],
+  "plugins": [
+    "@typescript-eslint",
+    "prettier",
+    "import"
+  ],
   "parser": "@typescript-eslint/parser",
   "rules": {
-    "@typescript-eslint/no-unused-vars": "warn",
-    "@typescript-eslint/no-explicit-any": "warn"
+    // Reglas de TypeScript
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/explicit-function-return-type": "warn",
+    "@typescript-eslint/no-non-null-assertion": "warn",
+    
+    // Reglas de importación
+    "import/order": [
+      "error",
+      {
+        "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
+        "newlines-between": "always",
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        }
+      }
+    ],
+    "import/no-unresolved": "error",
+    
+    // Reglas de Next.js
+    "@next/next/no-html-link-for-pages": "error",
+    "@next/next/no-img-element": "error",
+    
+    // Reglas generales
+    "prettier/prettier": ["error", {
+      "singleQuote": true,
+      "trailingComma": "es5",
+      "printWidth": 100,
+      "tabWidth": 2,
+      "semi": true
+    }]
+  },
+  "settings": {
+    "import/resolver": {
+      "typescript": {},
+      "node": {
+        "extensions": [".js", ".jsx", ".ts", ".tsx"]
+      }
+    }
   }
 } 
