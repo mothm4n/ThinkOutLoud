@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Audio Recorder App
 
-## Getting Started
+Una aplicación web simple para grabar audio con una interfaz intuitiva, desarrollada con Next.js y Tailwind CSS.
 
-First, run the development server:
+## Características
+
+- 🎙️ Grabación de audio en tiempo real
+- 📊 Visualización de la onda de audio durante la grabación
+- 💾 Guardado automático en formato WebM
+- 🎵 Previsualización de audio antes de guardar
+- 🎨 Interfaz moderna y responsive
+- 🔊 Alta calidad de audio con reducción de ruido
+
+## Requisitos Previos
+
+- Node.js 18.x o superior
+- npm o yarn
+
+## Instalación
+
+1. Clona el repositorio:
+
+```bash
+git clone https://github.com/mothm4n/audio-recorder.git
+cd audio-recorder
+```
+
+2. Instala las dependencias:
+
+```bash
+npm install
+# o
+yarn install
+```
+
+3. Inicia el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
+# o
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Uso
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Selecciona una carpeta de destino para guardar las grabaciones
+2. Haz clic en el botón del micrófono para comenzar a grabar
+3. Haz clic nuevamente para detener la grabación
+4. Previsualiza la grabación antes de guardarla
+5. La grabación se guardará automáticamente en la carpeta seleccionada
 
-## Learn More
+## Tecnologías Utilizadas
 
-To learn more about Next.js, take a look at the following resources:
+- [Next.js](https://nextjs.org/)
+- [React](https://reactjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+- [MediaRecorder API](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Licencia
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+MIT
 
-## Deploy on Vercel
+## Autor
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Marc Gelpí Mateu ([@Mothm4n](https://github.com/mothm4n))

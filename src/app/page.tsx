@@ -1,101 +1,287 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { FaMicrophone, FaStop, FaFolder, FaPlay, FaPause } from 'react-icons/fa';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [isRecording, setIsRecording] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [audioURL, setAudioURL] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const [selectedPath, setSelectedPath] = useState<string>('');
+  const animationFrameRef = useRef<number>();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContextRef.current?.state !== 'closed') {
+        audioContextRef.current?.close();
+      }
+    };
+  }, []);
+
+  const visualize = (stream: MediaStream) => {
+    if (!canvasRef.current) return;
+
+    audioContextRef.current = new AudioContext();
+    analyserRef.current = audioContextRef.current.createAnalyser();
+    const source = audioContextRef.current.createMediaStreamSource(stream);
+    source.connect(analyserRef.current);
+    analyserRef.current.fftSize = 2048;
+
+    const bufferLength = analyserRef.current.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    const canvas = canvasRef.current;
+    const canvasCtx = canvas.getContext('2d');
+
+    if (!canvasCtx) return;
+
+    const draw = () => {
+      if (!analyserRef.current || !canvasCtx) return;
+
+      animationFrameRef.current = requestAnimationFrame(draw);
+      analyserRef.current.getByteTimeDomainData(dataArray);
+
+      canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+      canvasCtx.lineWidth = 2;
+      canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
+      canvasCtx.beginPath();
+
+      const sliceWidth = (canvas.width * 1.0) / bufferLength;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = (v * canvas.height) / 2;
+
+        if (i === 0) {
+          canvasCtx.moveTo(x, y);
+        } else {
+          canvasCtx.lineTo(x, y);
+        }
+
+        x += sliceWidth;
+      }
+
+      canvasCtx.lineTo(canvas.width, canvas.height / 2);
+      canvasCtx.stroke();
+    };
+
+    draw();
+  };
+
+  const handleFolderSelect = async () => {
+    try {
+      // @ts-expect-error - showDirectoryPicker is experimental
+      const dirHandle = await window.showDirectoryPicker();
+      setSelectedPath(dirHandle.name);
+      setError(null);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError('Error al seleccionar la carpeta: ' + err.message);
+      }
+    }
+  };
+
+  const handlePlayPause = () => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleRecording = async () => {
+    try {
+      if (!isRecording) {
+        if (!selectedPath) {
+          setError('Por favor, selecciona una carpeta de destino primero');
+          return;
+        }
+        setError(null);
+        setSuccessMessage(null);
+        setAudioURL(null);
+
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          } 
+        });
+
+        visualize(stream);
+        
+        // Intentamos usar el formato más compatible
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm';
+
+        mediaRecorderRef.current = new MediaRecorder(stream, {
+          mimeType,
+          audioBitsPerSecond: 128000
+        });
+        
+        chunksRef.current = [];
+
+        mediaRecorderRef.current.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunksRef.current.push(e.data);
+          }
+        };
+
+        mediaRecorderRef.current.onstop = async () => {
+          try {
+            const audioBlob = new Blob(chunksRef.current, { type: mimeType });
+            const fileName = `recording-${new Date().toISOString().replace(/[:.]/g, '-')}.webm`;
+            
+            // Crear URL para previsualización
+            const url = URL.createObjectURL(audioBlob);
+            setAudioURL(url);
+
+            try {
+              // @ts-expect-error - showDirectoryPicker is experimental
+              const dirHandle = await window.showDirectoryPicker({
+                startIn: selectedPath,
+              });
+              const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+              const writable = await fileHandle.createWritable();
+              await writable.write(audioBlob);
+              await writable.close();
+              setSuccessMessage('¡Grabación guardada exitosamente!');
+            } catch {
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = fileName;
+              a.click();
+              setSuccessMessage('Grabación descargada exitosamente');
+            }
+          } catch (err) {
+            setError('Error al guardar la grabación');
+            console.error('Error saving recording:', err);
+          }
+        };
+
+        // Configuramos para que genere chunks cada 250ms para mejor calidad
+        mediaRecorderRef.current.start(250);
+        setIsRecording(true);
+      } else {
+        if (mediaRecorderRef.current) {
+          mediaRecorderRef.current.stop();
+          mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        }
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        if (audioContextRef.current?.state !== 'closed') {
+          await audioContextRef.current?.close();
+        }
+        setIsRecording(false);
+      }
+    } catch (err) {
+      setError('Por favor permite el acceso al micrófono para grabar audio');
+      console.error('Error accessing microphone:', err);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+      if (audioURL) {
+        URL.revokeObjectURL(audioURL);
+      }
+    };
+  }, [isRecording, audioURL]);
+
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+      <div className="text-center space-y-6 w-full max-w-md">
+        <div className="flex flex-col items-center space-y-4">
+          <button
+            onClick={handleFolderSelect}
+            className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <FaFolder className="w-4 h-4" />
+            Seleccionar carpeta de destino
+          </button>
+          {selectedPath && (
+            <p className="text-sm text-gray-600">
+              Carpeta seleccionada: {selectedPath}
+            </p>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        <div className="relative">
+          <canvas
+            ref={canvasRef}
+            className="w-full h-24 bg-white rounded-lg shadow-inner"
+            width={300}
+            height={96}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        </div>
+
+        <button
+          onClick={handleRecording}
+          className={`p-8 rounded-full transition-all duration-300 ${
+            isRecording 
+              ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+              : 'bg-blue-500 hover:bg-blue-600'
+          }`}
+          aria-label={isRecording ? 'Detener grabación' : 'Iniciar grabación'}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          {isRecording ? (
+            <FaStop className="w-8 h-8 text-white" />
+          ) : (
+            <FaMicrophone className="w-8 h-8 text-white" />
+          )}
+        </button>
+        
+        <p className="text-lg font-medium">
+          {isRecording ? 'Grabación en curso...' : 'Haz clic para comenzar a grabar'}
+        </p>
+
+        {audioURL && !isRecording && (
+          <div className="space-y-2">
+            <button
+              onClick={handlePlayPause}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors mx-auto"
+            >
+              {isPlaying ? <FaPause className="w-4 h-4" /> : <FaPlay className="w-4 h-4" />}
+              {isPlaying ? 'Pausar' : 'Reproducir'} grabación
+            </button>
+            <audio
+              ref={audioRef}
+              src={audioURL}
+              onEnded={() => setIsPlaying(false)}
+              className="w-full mt-2"
+              controls
+            />
+          </div>
+        )}
+        
+        {error && (
+          <p className="text-red-500" role="alert">{error}</p>
+        )}
+        
+        {successMessage && (
+          <p className="text-green-500 font-medium" role="status">{successMessage}</p>
+        )}
+      </div>
+    </main>
   );
 }
